@@ -6,12 +6,14 @@
     <title>Carrinho - Laticínio Esperança</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/carrinho.css"> <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="css/carrinho.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="shortcut icon" href="ico/favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="notification-container"></div>
     <div class="top-bar-info">
         <div class="container">
             <span>Laticínio Esperança</span>
@@ -49,7 +51,7 @@
         <h2>Seu Carrinho de Compras</h2>
         <div id="carrinho-itens-container" class="carrinho-itens-grid">
             </div>
-        <div class="carrinho-resumo">
+        <div id="carrinho-resumo-container" class="carrinho-resumo" style="display: none;">
             <h3>Total: R$ <span id="carrinho-total">0.00</span></h3>
             <p class="tipo-entrega-info">Opção de Entrega: Retirada no Local</p>
             <input type="hidden" name="tipo_entrega" value="retirada" id="tipo-entrega-retirada">
@@ -57,128 +59,90 @@
         </div>
     </main>
 
-    <footer>
-        <div class="container">
-            <div class="contatos-footer">
-                <h3>Contatos</h3>
-                <p>
-                    <a href="https://wa.me/5587991657703" target="_blank">
-                        <i class="fab fa-whatsapp"></i>
-                        (87) 99165-7703
-                    </a>
-                </p>
-                <p>
-                    <a href="https://instagram.com/laticinio_esperanca232" target="_blank"> <i class="fab fa-instagram"></i>
-                        @laticinio_esperanca232
-                    </a>
-                </p>
-            </div>
-            <div class="links-footer">
-                <h3>Navegação</h3>
-                <ul>
-                    <li><a href="index.html">Início</a></li>
-                    <li><a href="produtos.html">Produtos</a></li>
-                    <li><a href="login.html">Login</a></li>
-                    <li><a href="index.html#contato">Contato</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="copyright">
-            <p>&copy; <span id="anoAtual"></span> Laticínio Esperança. Todos os direitos reservados.</p>
-            <p>Projeto de Faculdade - Desenvolvimento Web</p>
-        </div>
-    </footer>
-
     <script src="js/main.js"></script>
     <script>
         let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
 
-        function updateCartCount() {
-            const cartCountDisplay = document.querySelector('.cart-count-display');
-            const totalItems = carrinho.reduce((sum, item) => sum + item.quantidade, 0);
-            if (cartCountDisplay) {
-                if (totalItems > 0) {
-                    cartCountDisplay.textContent = totalItems;
-                    cartCountDisplay.style.display = 'inline-block';
-                } else {
-                    cartCountDisplay.style.display = 'none';
-                }
-            }
-        }
-
-        async function renderCart() {
+        function renderCart() {
             const carrinhoItensContainer = document.getElementById('carrinho-itens-container');
+            const carrinhoResumoContainer = document.getElementById('carrinho-resumo-container');
             const carrinhoTotalSpan = document.getElementById('carrinho-total');
             carrinhoItensContainer.innerHTML = '';
             let total = 0;
 
             if (carrinho.length === 0) {
                 carrinhoItensContainer.innerHTML = '<p class="carrinho-vazio">Seu carrinho está vazio.</p>';
+                carrinhoResumoContainer.style.display = 'none';
             } else {
-                for (const item of carrinho) { // Usar for...of para await no loop
+                carrinhoResumoContainer.style.display = 'block';
+                carrinho.forEach(item => {
                     const itemTotal = item.preco * item.quantidade;
                     total += itemTotal;
 
-                    // Para buscar a imagem do produto
                     const imageUrl = `php/produtos_api.php?get_image=true&id=${item.id}`;
 
                     const itemDiv = document.createElement('div');
                     itemDiv.classList.add('carrinho-item');
                     itemDiv.innerHTML = `
+                        <img src="${imageUrl}" alt="${item.nome}" class="item-image">
                         <div class="item-details">
-                            <img src="${imageUrl}" alt="${item.nome}" class="item-image">
-                            <div class="item-info">
-                                <span class="item-name">${item.nome}</span>
-                                <span class="item-price">R$ ${item.preco.toFixed(2)}</span>
-                            </div>
+                            <span class="item-name">${item.nome}</span>
+                            <span class="item-price">R$ ${parseFloat(item.preco).toFixed(2)}</span>
                         </div>
                         <div class="item-controls">
                             <input type="number" value="${item.quantidade}" min="1" max="${item.estoque_disponivel}" data-id="${item.id}" class="quantidade-input">
                             <span class="item-subtotal">R$ ${itemTotal.toFixed(2)}</span>
-                            <button class="remover-item" data-id="${item.id}"><i class="fas fa-trash-alt"></i></button>
+                            <button class="remover-item" data-id="${item.id}" title="Remover item"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     `;
                     carrinhoItensContainer.appendChild(itemDiv);
-                }
+                });
             }
             carrinhoTotalSpan.textContent = total.toFixed(2);
-            updateCartCount();
+            // A função para atualizar o contador no header já está em main.js
         }
 
-        document.addEventListener('change', function(event) {
+        function updateCartItem(productId, newQuantity) {
+            const itemIndex = carrinho.findIndex(item => item.id == productId);
+            if (itemIndex > -1) {
+                const maxAllowed = carrinho[itemIndex].estoque_disponivel;
+                if (newQuantity > maxAllowed) {
+                    showNotification(`Quantidade máxima para ${carrinho[itemIndex].nome} é ${maxAllowed}.`, 'error');
+                    carrinho[itemIndex].quantidade = maxAllowed;
+                } else if (newQuantity < 1) {
+                    carrinho[itemIndex].quantidade = 1;
+                } else {
+                    carrinho[itemIndex].quantidade = newQuantity;
+                }
+                localStorage.setItem('carrinho', JSON.stringify(carrinho));
+                renderCart();
+            }
+        }
+
+        carrinhoItensContainer.addEventListener('change', function(event) {
             if (event.target.classList.contains('quantidade-input')) {
                 const productId = event.target.dataset.id;
                 const newQuantity = parseInt(event.target.value);
-                const itemIndex = carrinho.findIndex(item => item.id == productId);
-
-                if (itemIndex > -1) {
-                    const maxAllowed = carrinho[itemIndex].estoque_disponivel;
-                    if (newQuantity > maxAllowed) {
-                        alert(`Quantidade máxima para ${carrinho[itemIndex].nome} é ${maxAllowed}.`);
-                        event.target.value = maxAllowed;
-                        carrinho[itemIndex].quantidade = maxAllowed;
-                    } else {
-                        carrinho[itemIndex].quantidade = newQuantity;
-                    }
-                    localStorage.setItem('carrinho', JSON.stringify(carrinho));
-                    renderCart();
-                }
+                updateCartItem(productId, newQuantity);
             }
         });
 
-        document.addEventListener('click', function(event) {
-            if (event.target.classList.contains('remover-item') || event.target.closest('.remover-item')) {
-                const button = event.target.closest('.remover-item');
-                const productId = button.dataset.id;
+        carrinhoItensContainer.addEventListener('click', function(event) {
+            const removerBtn = event.target.closest('.remover-item');
+            if (removerBtn) {
+                const productId = removerBtn.dataset.id;
                 carrinho = carrinho.filter(item => item.id != productId);
                 localStorage.setItem('carrinho', JSON.stringify(carrinho));
+                showNotification('Item removido do carrinho.', 'success');
                 renderCart();
+                // Forçar atualização do contador no header
+                document.dispatchEvent(new CustomEvent('cartUpdated'));
             }
         });
 
         document.getElementById('finalizar-pedido').addEventListener('click', async function() {
             if (carrinho.length === 0) {
-                alert('Seu carrinho está vazio. Adicione produtos antes de finalizar o pedido.');
+                showNotification('Seu carrinho está vazio.', 'error');
                 return;
             }
 
@@ -187,32 +151,32 @@
             try {
                 const response = await fetch('php/pedidos_api.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ carrinho: carrinho.map(item => ({ produto_id: item.id, quantidade: item.quantidade })), tipo_entrega: tipoEntrega })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        carrinho: carrinho.map(item => ({ produto_id: item.id, quantidade: item.quantidade })),
+                        tipo_entrega: tipoEntrega
+                    })
                 });
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert(data.message);
+                    showNotification(data.message, 'success');
                     localStorage.removeItem('carrinho');
                     carrinho = [];
-                    renderCart();
-                    window.location.href = 'minha_conta.html';
+                    setTimeout(() => {
+                        window.location.href = 'minha_conta.html';
+                    }, 1500);
                 } else {
-                    alert(`Erro ao finalizar pedido: ${data.message}`);
+                    showNotification(`Erro: ${data.message}`, 'error');
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                alert('Ocorreu um erro ao finalizar o pedido.');
+                showNotification('Ocorreu um erro ao finalizar o pedido.', 'error');
             }
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            renderCart();
-            updateCartCount();
-        });
+        document.addEventListener('DOMContentLoaded', renderCart);
+        document.addEventListener('cartUpdated', renderCart);
     </script>
 </body>
 </html>

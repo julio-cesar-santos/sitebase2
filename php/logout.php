@@ -1,5 +1,10 @@
 <?php
 require_once 'auth.php';
+
+// A função logoutUser já inicia a sessão se necessário
 logoutUser();
-header('Location: index.html'); // Redireciona para a página inicial
+
+// Em vez de redirecionar, retorna uma resposta JSON
+header('Content-Type: application/json');
+echo json_encode(['success' => true, 'message' => 'Sessão encerrada com sucesso!']);
 exit();

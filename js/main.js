@@ -7,11 +7,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const cartLink = document.getElementById('cart-link');
     const cartCountDisplay = document.querySelector('.cart-count-display');
 
-    // Função para atualizar o contador do carrinho na UI
+    // Função para exibir notificações
+    window.showNotification = function(message, type = 'success') {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+
+        container.appendChild(notification);
+
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                container.removeChild(notification);
+            }, 500);
+        }, 3000);
+    }
+
     function updateCartCount() {
         let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
         const totalItems = carrinho.reduce((sum, item) => sum + item.quantidade, 0);
-        if (cartCountDisplay) { // Verifica se o elemento existe
+        if (cartCountDisplay) {
             if (totalItems > 0) {
                 cartCountDisplay.textContent = totalItems;
                 cartCountDisplay.style.display = 'inline-block';
@@ -21,71 +43,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Função para verificar o status de login e admin
     async function checkAuthStatus() {
         try {
-            const response = await fetch('php/auth_status.php'); // Novo arquivo para verificar o status de autenticação
+            const response = await fetch('php/auth_status.php');
             const data = await response.json();
 
             if (data.isAuthenticated) {
-                navLogin.style.display = 'none';
-                navCadastro.style.display = 'none';
-                navConta.style.display = 'inline-block';
-                navLogout.style.display = 'inline-block';
-                cartLink.style.display = 'inline-block'; // Mostra o carrinho para usuários logados
+                if(navLogin) navLogin.style.display = 'none';
+                if(navCadastro) navCadastro.style.display = 'none';
+                if(navConta) navConta.style.display = 'inline-block';
+                if(navLogout) navLogout.style.display = 'inline-block';
+                if(cartLink) cartLink.style.display = 'inline-block';
 
                 if (data.isAdmin) {
-                    navAdmin.style.display = 'inline-block';
+                   if(navAdmin) navAdmin.style.display = 'inline-block';
                 } else {
-                    navAdmin.style.display = 'none';
+                   if(navAdmin) navAdmin.style.display = 'none';
                 }
             } else {
-                navLogin.style.display = 'inline-block';
-                navCadastro.style.display = 'inline-block';
-                navConta.style.display = 'none';
-                navAdmin.style.display = 'none';
-                navLogout.style.display = 'none';
-                cartLink.style.display = 'none'; // Esconde o carrinho para usuários não logados
+                if(navLogin) navLogin.style.display = 'inline-block';
+                if(navCadastro) navCadastro.style.display = 'inline-block';
+                if(navConta) navConta.style.display = 'none';
+                if(navAdmin) navAdmin.style.display = 'none';
+                if(navLogout) navLogout.style.display = 'none';
+                if(cartLink) cartLink.style.display = 'none';
             }
         } catch (error) {
             console.error('Erro ao verificar status de autenticação:', error);
-            // Em caso de erro, assumir não logado para evitar acesso indevido
-            navLogin.style.display = 'inline-block';
-            navCadastro.style.display = 'inline-block';
-            navConta.style.display = 'none';
-            navAdmin.style.display = 'none';
-            navLogout.style.display = 'none';
-            cartLink.style.display = 'none';
+            // Assumir não logado em caso de erro
         }
     }
 
-    // Lógica para o botão de logout
     if (navLogout) {
         navLogout.addEventListener('click', async function(event) {
             event.preventDefault();
             try {
                 const response = await fetch('php/logout.php');
-                if (response.ok) {
-                    alert('Sessão encerrada com sucesso!');
-                    localStorage.removeItem('carrinho'); // Limpa o carrinho ao fazer logout
-                    window.location.href = 'index.html';
+                const data = await response.json();
+                if (data.success) {
+                    showNotification(data.message);
+                    localStorage.removeItem('carrinho');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
                 } else {
-                    alert('Erro ao fazer logout.');
+                    showNotification('Erro ao fazer logout.', 'error');
                 }
             } catch (error) {
                 console.error('Erro de logout:', error);
-                alert('Ocorreu um erro ao tentar sair.');
+                showNotification('Ocorreu um erro ao tentar sair.', 'error');
             }
         });
     }
 
-    // Define o ano atual no footer
     const anoAtualSpan = document.getElementById('anoAtual');
     if (anoAtualSpan) {
         anoAtualSpan.textContent = new Date().getFullYear();
     }
 
-    // Chama as funções ao carregar a página
     checkAuthStatus();
     updateCartCount();
 });

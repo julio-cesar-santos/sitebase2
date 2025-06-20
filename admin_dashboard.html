@@ -6,12 +6,14 @@
     <title>Dashboard Admin - Laticínio Esperança</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/admin.css"> <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="shortcut icon" href="ico/favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="notification-container"></div>
     <div class="top-bar-info">
         <div class="container">
             <span>Laticínio Esperança</span>
@@ -46,55 +48,48 @@
     </header>
 
     <main class="admin-content container">
-        <h2>Bem-vindo, Administrador!</h2>
-        <p>Gerencie o seu laticínio de forma eficiente.</p>
+        <div class="admin-header">
+            <h2>Bem-vindo, Administrador!</h2>
+            <p>Gerencie o seu laticínio de forma rápida e eficiente a partir deste painel.</p>
+        </div>
 
         <div class="admin-actions">
-            <a href="admin_add_produto.html" class="btn-cta">Gerenciar Produtos</a>
-            <a href="admin_faturamento.html" class="btn-cta">Ver Faturamento e Pedidos</a>
-            </div>
+            <a href="admin_add_produto.html" class="action-card">
+                <i class="fas fa-plus-circle"></i>
+                <h3>Gerenciar Produtos</h3>
+                <p>Adicione, edite ou remova produtos do seu catálogo.</p>
+            </a>
+            <a href="admin_faturamento.html" class="action-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>Ver Faturamento e Pedidos</h3>
+                <p>Acompanhe as vendas e gerencie os pedidos dos clientes.</p>
+            </a>
+        </div>
     </main>
 
-    <footer>
+    <footer class="admin-footer">
         <div class="container" id="contato">
-            <div class="contatos-footer">
-                <h3>Contatos</h3>
-                <p>
-                    <a href="https://wa.me/5587991657703" target="_blank">
-                        <i class="fab fa-whatsapp"></i>
-                        (87) 99165-7703
-                    </a>
-                </p>
-                <p>
-                    <a href="https://instagram.com/laticinio_esperanca232" target="_blank"> <i
-                            class="fab fa-instagram"></i>
-                        @laticinio_esperanca232
-                    </a>
-                </p>
-            </div>
-            <div class="links-footer">
-                <h3>Navegação</h3>
-                <ul>
-                    <li><a href="index.html">Início</a></li>
-                    <li><a href="produtos.html">Produtos</a></li>
-                    <li><a href="login.html">Login</a></li>
-                </ul>
-            </div>
         </div>
         <div class="copyright">
             <p>&copy; <span id="anoAtual"></span> Laticínio Esperança. Todos os direitos reservados.</p>
-            <p>Projeto de Faculdade - Desenvolvimento Web</p>
+            <p>Painel Administrativo</p>
         </div>
     </footer>
 
     <script src="js/main.js"></script>
     <script>
-            async function checkAdmin() {
-            const response = await fetch('php/check_admin.php');
-            const data = await response.json();
-            if (!data.is_admin) {
-                alert('Acesso negado. Você não tem permissão para acessar esta página.');
-                window.location.href = 'index.html';
+        async function checkAdmin() {
+            try {
+                const response = await fetch('php/check_admin.php');
+                const data = await response.json();
+                if (!data.is_admin) {
+                    showNotification('Acesso negado. Você não tem permissão para acessar esta página.', 'error');
+                    setTimeout(() => {  window.location.href = 'index.html'; }, 2000);
+                }
+            } catch (error) {
+                console.error('Falha ao verificar status de admin:', error);
+                showNotification('Erro de autenticação. Redirecionando...', 'error');
+                setTimeout(() => {  window.location.href = 'index.html'; }, 2000);
             }
         }
         checkAdmin();

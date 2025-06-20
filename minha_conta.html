@@ -6,12 +6,14 @@
     <title>Minha Conta - Laticínio Esperança</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/minha_conta.css"> <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="css/minha_conta.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="shortcut icon" href="ico/favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="notification-container"></div>
     <div class="top-bar-info">
         <div class="container">
             <span>Laticínio Esperança</span>
@@ -39,85 +41,111 @@
                 <ul>
                     <li><a href="index.html">Início</a></li>
                     <li><a href="produtos.html">Produtos</a></li>
-                    <li><a href="#contato">Contato</a></li>
+                    <li><a href="index.html#contato">Contato</a></li>
                 </ul>
             </div>
         </nav>
     </header>
 
-    <main class="minha-conta-content container">
+    <main class="container conta-content">
         <h2>Meus Pedidos</h2>
-        <div id="lista-meus-pedidos">
-            </div>
+        <p>Acompanhe aqui o histórico dos seus pedidos realizados.</p>
+        <br>
+        <div id="meus-pedidos-lista">
+        </div>
     </main>
-
-    <footer>
+    
+    <footer class="main-footer">
         <div class="container" id="contato">
-            <div class="contatos-footer">
-                <h3>Contatos</h3>
-                <p>
-                    <a href="https://wa.me/5587991657703" target="_blank">
-                        <i class="fab fa-whatsapp"></i>
-                        (87) 99165-7703
-                    </a>
-                </p>
-                <p>
-                    <a href="https://instagram.com/laticinio_esperanca232" target="_blank"> <i
-                            class="fab fa-instagram"></i>
-                        @laticinio_esperanca232
-                    </a>
-                </p>
+            <div class="footer-section">
+                <h3>Contato</h3>
+                <p>Email: contato@laticinioesperanca.com</p>
+                <p>Telefone: (35) 9999-9999</p>
             </div>
-            <div class="links-footer">
-                <h3>Navegação</h3>
-                <ul>
-                    <li><a href="index.html">Início</a></li>
-                    <li><a href="produtos.html">Produtos</a></li>
-                    <li><a href="login.html">Login</a></li>
-                </ul>
+            <div class="footer-section">
+                <h3>Endereço</h3>
+                <p>Rua Principal, 123, Centro</p>
+                <p>Alpinópolis, MG</p>
             </div>
         </div>
         <div class="copyright">
             <p>&copy; <span id="anoAtual"></span> Laticínio Esperança. Todos os direitos reservados.</p>
-            <p>Projeto de Faculdade - Desenvolvimento Web</p>
         </div>
     </footer>
 
     <script src="js/main.js"></script>
     <script>
-        async function loadMyOrders() {
+        async function loadUserOrders() {
+            const listaPedidosDiv = document.getElementById('meus-pedidos-lista');
             try {
-                const response = await fetch('pedidos_api.php');
+                const response = await fetch('php/pedidos_api.php');
+                if (!response.ok) {
+                    throw new Error('Falha ao buscar os pedidos.');
+                }
                 const orders = await response.json();
-                const listaPedidosDiv = document.getElementById('lista-meus-pedidos');
+
                 listaPedidosDiv.innerHTML = '';
 
-                if (orders.message && orders.message.includes('Não autorizado')) {
-                    listaPedidosDiv.innerHTML = '<p>Você precisa estar logado para ver seus pedidos.</p>';
+                if (orders.length === 0) {
+                    listaPedidosDiv.innerHTML = '<div class="nenhum-pedido"><h3>Você ainda não fez nenhum pedido.</h3><p>Explore nossos <a href="produtos.html">produtos</a> e faça sua primeira compra!</p></div>';
                     return;
                 }
 
-                if (orders.length > 0) {
-                    const ul = document.createElement('ul');
-                    orders.forEach(order => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `
-                            <strong>Pedido ID: ${order.id}</strong> - Data: ${new Date(order.data_pedido).toLocaleString()} - Total: R$ ${parseFloat(order.total).toFixed(2)} - Tipo de Entrega: ${order.tipo_entrega} - Status: <strong>${order.status}</strong>
+                orders.forEach(order => {
+                    const orderDate = new Date(order.data_pedido).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const orderTotal = parseFloat(order.total).toFixed(2);
+
+                    let itensHtml = '';
+                    order.itens.forEach(item => {
+                        itensHtml += `
+                            <div class="pedido-item-produto">
+                                <img src="php/produtos_api.php?get_image=true&id=${item.produto_id}" alt="${item.nome_produto}" class="produto-imagem-pedido">
+                                <div class="produto-detalhes">
+                                    <strong>${item.nome_produto}</strong>
+                                    <span>Quantidade: ${item.quantidade} | Preço Un.: R$ ${parseFloat(item.preco_unitario).toFixed(2)}</span>
+                                </div>
+                            </div>
                         `;
-                        ul.appendChild(li);
                     });
-                    listaPedidosDiv.appendChild(ul);
-                } else {
-                    listaPedidosDiv.innerHTML = '<p>Você ainda não realizou nenhum pedido.</p>';
-                }
+
+                    const orderDiv = document.createElement('div');
+                    orderDiv.classList.add('pedido-item');
+                    orderDiv.innerHTML = `
+                        <div class="pedido-header">
+                            <div>
+                                <strong>Pedido #${order.id}</strong> - <span>${orderDate}</span>
+                            </div>
+                            <span class="status ${order.status}">${order.status}</span>
+                            <span>Total: <strong>R$ ${orderTotal}</strong></span>
+                        </div>
+                        <div class="pedido-body">
+                            ${itensHtml}
+                        </div>
+                    `;
+                    listaPedidosDiv.appendChild(orderDiv);
+                });
+
             } catch (error) {
-                console.error('Erro ao carregar meus pedidos:', error);
-                document.getElementById('lista-meus-pedidos').innerHTML = '<p>Erro ao carregar seus pedidos. Tente novamente mais tarde.</p>';
+                console.error('Erro ao carregar pedidos:', error);
+                listaPedidosDiv.innerHTML = '<div class="nenhum-pedido"><h3>Ocorreu um erro ao buscar seus pedidos.</h3><p>Por favor, tente novamente mais tarde.</p></div>';
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadMyOrders();
+            fetch('php/auth_status.php')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.isAuthenticated) {
+                        loadUserOrders();
+                    } else {
+                        showNotification('Você precisa estar logado para ver seus pedidos.', 'error');
+                        setTimeout(() => window.location.href = 'login.html', 2000);
+                    }
+                })
+                .catch(() => {
+                    showNotification('Erro de autenticação. Redirecionando para o login.', 'error');
+                    setTimeout(() => window.location.href = 'login.html', 2000);
+                });
         });
     </script>
 </body>

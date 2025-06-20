@@ -35,6 +35,10 @@
     </header>
 
     <main class="admin-content container">
+        <div class="admin-header-options">
+            <a href="admin_dashboard.html" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar ao Painel</a>
+        </div>
+
         <div class="form-container">
             <h2 id="form-title">Adicionar Novo Produto</h2>
             <form id="addProdutoForm" class="admin-form" enctype="multipart/form-data">
@@ -65,12 +69,16 @@
         <div class="list-container">
             <h3>Produtos Existentes</h3>
             <div id="lista-produtos-admin">
-                </div>
+            </div>
         </div>
     </main>
 
     <script src="js/main.js"></script>
     <script>
+        const formTitle = document.getElementById('form-title');
+        const submitBtn = document.getElementById('submit-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
         async function checkAdmin() {
             const response = await fetch('php/check_admin.php');
             const data = await response.json();
@@ -79,11 +87,6 @@
                 setTimeout(() => { window.location.href = 'index.html'; }, 2000);
             }
         }
-        checkAdmin();
-
-        const formTitle = document.getElementById('form-title');
-        const submitBtn = document.getElementById('submit-btn');
-        const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
         async function loadProductsAdmin() {
             try {
@@ -104,8 +107,12 @@
                                 <span>R$ ${parseFloat(product.preco).toFixed(2)} | Estoque: ${product.estoque}</span>
                             </div>
                             <div class="produto-admin-actions">
-                                <button class="btn-edit-produto" data-id="${product.id}" data-nome="${product.nome}" data-preco="${product.preco}" data-estoque="${product.estoque}"><i class="fas fa-edit"></i></button>
-                                <button class="btn-delete-produto" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                                <button class="btn-edit-produto" data-id="${product.id}" data-nome="${product.nome}" data-preco="${product.preco}" data-estoque="${product.estoque}">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn-delete-produto" data-id="${product.id}">
+                                    <i class="fas fa-trash"></i> Remover
+                                </button>
                             </div>
                         `;
                         listaProdutosAdmin.appendChild(productItem);
@@ -192,7 +199,10 @@
             }
         });
 
-        document.addEventListener('DOMContentLoaded', loadProductsAdmin);
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAdmin();
+            loadProductsAdmin();
+        });
     </script>
 </body>
 </html>

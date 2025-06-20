@@ -35,16 +35,20 @@
     </header>
 
     <main class="admin-content container">
+        <div class="admin-header-options">
+            <a href="admin_dashboard.html" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar ao Painel</a>
+        </div>
+
         <div class="faturamento-container list-container">
             <h2>Relatório de Faturamento</h2>
             <div id="faturamento-data">
-                </div>
+            </div>
         </div>
 
         <div class="pedidos-container list-container">
             <h2>Todos os Pedidos</h2>
             <div id="lista-pedidos-admin">
-                </div>
+            </div>
         </div>
     </main>
 
@@ -58,17 +62,16 @@
                 setTimeout(() => { window.location.href = 'index.html'; }, 2000);
             }
         }
-        checkAdmin();
 
         async function loadFaturamento() {
             try {
                 const response = await fetch('php/pedidos_api.php?faturamento=true');
                 const faturamentoData = await response.json();
                 const faturamentoDiv = document.getElementById('faturamento-data');
-                faturamentoDiv.innerHTML = '<table><thead><tr><th>Data</th><th>Faturamento Diário</th></tr></thead><tbody></tbody></table>';
-                const tbody = faturamentoDiv.querySelector('tbody');
-
+                
                 if (faturamentoData.length > 0) {
+                    faturamentoDiv.innerHTML = '<table><thead><tr><th>Data</th><th>Faturamento Diário</th></tr></thead><tbody></tbody></table>';
+                    const tbody = faturamentoDiv.querySelector('tbody');
                     faturamentoData.forEach(item => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `<td>${item.data}</td><td>R$ ${parseFloat(item.faturamento_diario).toFixed(2)}</td>`;
@@ -97,9 +100,9 @@
                     orders.forEach(order => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${order.id}</td>
+                            <td>#${order.id}</td>
                             <td>${order.cliente_nome}</td>
-                            <td>${new Date(order.data_pedido).toLocaleString()}</td>
+                            <td>${new Date(order.data_pedido).toLocaleString('pt-BR')}</td>
                             <td>R$ ${parseFloat(order.total).toFixed(2)}</td>
                             <td>
                                 <select class="status-pedido-select" data-id="${order.id}">
@@ -146,6 +149,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            checkAdmin();
             loadFaturamento();
             loadAllOrders();
         });
